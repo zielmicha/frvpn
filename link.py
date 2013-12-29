@@ -17,7 +17,7 @@ PACKET_STAT = '\x03'
 #PACKET_STAT_ACK = '\x04'
 
 BANDWIDTH_PROBE_TIME = 1
-BANDWIDTH_SCALE = 0.99
+BANDWIDTH_SCALE = 0.9
 BANDWIDTH_SCALE_INTERVAL = 1
 STAT_INTERVAL = 0.5
 STAT_AVG_COUNT = 4
@@ -52,7 +52,7 @@ class _LinkSend:
         while (self.last_packets and
                self.last_packets[0][0] < oldest_time):
             ptime, plen = self.last_packets.pop(0)
-            self._used_bandwidth -= ptime
+            self._used_bandwidth -= plen
         return self._used_bandwidth / BANDWIDTH_PROBE_TIME
 
     used_bandwidth = property(get_used_bandwidth)
@@ -78,6 +78,7 @@ class _LinkSend:
         self.last_packet_num = self.packet_num
         self.stat_num += 1
         self.impl.send(pack)
+        print self
 
     def _recv_stat(self, data):
         stat_num, quality, send_time = struct.unpack('!xQdd', data)
@@ -101,6 +102,7 @@ class _LinkSend:
         else:
             self.calc_bandwidth = 0
             self.calc_ping = INF
+            self.calc_quality = 0
 
     def _recalc_bandwidth(self):
         # This method relies on higher level flow
@@ -130,6 +132,12 @@ class _LinkSend:
         count = int(t // BANDWIDTH_SCALE_INTERVAL)
         self._last_bandwidth_scale += count * BANDWIDTH_SCALE_INTERVAL
         self.calc_bandwidth *= (BANDWIDTH_SCALE ** count)
+
+    def __repr__(self):
+        return '<_LinkSend 0x%x bw=%d KBps used=%d KBps q=%d%% ping=%s ms>' % (
+            id(self), int(self.calc_bandwidth / KB),
+            int(self.used_bandwidth / KB), int(self.calc_quality * 100),
+            int(self.calc_ping * 1000) if self.calc_ping < INF else 'inf')
 
 def avg(s):
     s = list(s)
@@ -196,9 +204,7 @@ class Link:
             return getattr(self.linksend, name)
 
     def __repr__(self):
-        return '<Link 0x%x bw=%d KBps ping=%d ms>' % (
-            id(self), self.calc_bandwidth / KB,
-            self.calc_ping * 1000)
+        return repr(self.linksend)
 
 def create_link_pair():
     a = NullLinkImpl()
@@ -211,7 +217,6 @@ class NullLinkImpl:
     # default
     recv_callback = lambda x: None
     def send(self, data):
-        #print hex(id(self)), 'send', repr(data)
         self.other.recv_callback(data)
 
 if __name__ == '__main__':

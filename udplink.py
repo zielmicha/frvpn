@@ -14,7 +14,7 @@ class UdpLinkImpl:
         self.sock.sendto(data, self.remote)
 
     def fileno(self):
-        return self.sock
+        return self.sock.fileno()
 
     def recv(self):
         data, addr = self.sock.recvfrom(MAX_UDP_SIZE)
