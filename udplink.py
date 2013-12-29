@@ -13,7 +13,7 @@ class UdpLinkImpl:
     def send(self, data):
         self.sock.sendto(data, self.remote)
 
-    def get_fd(self):
+    def fileno(self):
         return self.sock
 
     def recv(self):
