@@ -19,3 +19,7 @@ class UdpLinkImpl:
     def recv(self):
         data, addr = self.sock.recvfrom(MAX_UDP_SIZE)
         self.recv_callback(data)
+
+def parse_addr(s):
+    host, port = s.rsplit(':', 1)
+    return host, int(port)
