@@ -23,14 +23,12 @@ class Channel:
 
     def choose_link(self):
         safe_links = [ l for l in self.links
-          if
-            l.calc_bandwidth != 0 and
-            l.used_bandwidth / l.calc_bandwidth > SAFE_BANDWIDTH_PART ]
+          if l.used_bandwidth_part < SAFE_BANDWIDTH_PART ]
         if safe_links:
             return min(safe_links, key=lambda l: l.calc_ping)
         else:
-            return max(self.links,
-              key=lambda l: l.calc_bandwidth - l.used_bandwidth)
+            return min(self.links,
+                       key=lambda l: l.used_bandwidth_part)
 
     def loop(self, file, bufsize=4096):
         def callback(data):

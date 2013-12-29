@@ -57,6 +57,13 @@ class _LinkSend:
 
     used_bandwidth = property(get_used_bandwidth)
 
+    @property
+    def used_bandwidth_part(self):
+        if self.calc_bandwidth == 0:
+            return INF
+        else:
+            return self.used_bandwidth / self.calc_bandwidth
+
     def send(self, data):
         self.last_packets.append((time.time(), len(data)))
         self._used_bandwidth += len(data)
