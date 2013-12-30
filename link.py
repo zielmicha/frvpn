@@ -84,6 +84,7 @@ class _LinkSend:
                             self.packet_num, self.last_packet_num)
         self.last_packet_num = self.packet_num
         self.stat_num += 1
+        self.packet_num += 1
         self.impl.send(pack)
         print self
 
@@ -139,6 +140,9 @@ class _LinkSend:
         count = int(t // BANDWIDTH_SCALE_INTERVAL)
         self._last_bandwidth_scale += count * BANDWIDTH_SCALE_INTERVAL
         self.calc_bandwidth *= (BANDWIDTH_SCALE ** count)
+        # If link is up, don't allow bandwidth to fall to 0
+        if self.calc_quality > 0.001:
+            self.calc_bandwidth = max(self.calc_bandwidth, 1000)
 
     def __repr__(self):
         return '<_LinkSend 0x%x bw=%d KBps used=%d KBps q=%d%% ping=%s ms>' % (
@@ -160,6 +164,7 @@ class _LinkRecv:
     def _recv_req(self, data):
         stat_num, send_time, \
             end_num, start_num = struct.unpack('!xQdQQ', data)
+        self.packet_nums.append(end_num)
         quality = self._calc_quality(start_num, end_num)
         self._send_stat(stat_num, quality, send_time)
 
