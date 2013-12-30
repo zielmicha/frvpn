@@ -64,6 +64,19 @@ class _LinkSend:
         else:
             return self.used_bandwidth / self.calc_bandwidth
 
+    @property
+    def expected_arrival_time(self):
+        return self.get_expected_arrival_time(1000)
+
+    def get_expected_arrival_time(self, size):
+        t = self.calc_ping / 2
+        # this estimates RTT/2 with BANDWIDTH_PROBE_TIME
+        data = (self.used_bandwidth + size) - self.calc_bandwidth
+        if self.calc_bandwidth == 0:
+            return INF
+        else:
+            return t * (1 + data / self.calc_bandwidth)
+
     def send(self, data):
         self.last_packets.append((time.time(), len(data)))
         self._used_bandwidth += len(data)

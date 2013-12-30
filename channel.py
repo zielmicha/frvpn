@@ -26,13 +26,7 @@ class Channel:
         link.send(data)
 
     def choose_link(self):
-        safe_links = [ l for l in self.links
-          if l.used_bandwidth_part < SAFE_BANDWIDTH_PART ]
-        if safe_links:
-            return min(safe_links, key=lambda l: l.calc_ping)
-        else:
-            return min(self.links,
-                       key=lambda l: l.used_bandwidth_part)
+        return min(self.links, key=lambda l: l.expected_arrival_time)
 
     def client_loop(self, file, bufsize=4096):
         self.recv_callback = file.write
