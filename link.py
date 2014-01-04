@@ -19,8 +19,8 @@ PACKET_STAT = '\x03'
 BANDWIDTH_PROBE_TIME = 1
 BANDWIDTH_SCALE = 0.9
 BANDWIDTH_SCALE_INTERVAL = 1
-STAT_INTERVAL = 0.5
-STAT_AVG_COUNT = 4
+STAT_INTERVAL = 0.2
+STAT_AVG_COUNT = 8
 
 _Stat = collections.namedtuple('_Stat', 'num ping quality')
 
@@ -81,8 +81,8 @@ class _LinkSend:
         self.last_packets.append((time.time(), len(data)))
         self._used_bandwidth += len(data)
         header = PACKET_DATA
-        header += struct.pack('!Q', self.packet_num)
         self.packet_num += 1
+        header += struct.pack('!Q', self.packet_num)
         self.impl.send(header + data)
         self._recalc()
 
@@ -99,7 +99,6 @@ class _LinkSend:
         self.stat_num += 1
         self.packet_num += 1
         self.impl.send(pack)
-        print self
 
     def _recv_stat(self, data):
         stat_num, quality, send_time = struct.unpack('!xQdd', data)
@@ -158,10 +157,11 @@ class _LinkSend:
             self.calc_bandwidth = max(self.calc_bandwidth, 1000)
 
     def __repr__(self):
-        return '<_LinkSend 0x%x bw=%d KBps used=%d KBps q=%d%% ping=%s ms>' % (
+        return '<\033[31m_LinkSend 0x%x bw=%d KBps used=%d KBps q=%d%% ping=%s ms\033[0m %r>' % (
             id(self), int(self.calc_bandwidth / KB),
             int(self.used_bandwidth / KB), int(self.calc_quality * 100),
-            int(self.calc_ping * 1000) if self.calc_ping < INF else 'inf')
+            int(self.calc_ping * 1000) if self.calc_ping < INF else 'inf',
+            None)
 
 def avg(s):
     s = list(s)
@@ -183,8 +183,9 @@ class _LinkRecv:
 
     def _calc_quality(self, start, end):
         count = end - start
-        if count < 5:
+        if count == 0:
             # traffic too small
+            self.packet_nums = []
             return 1.
         else:
             success = 0
@@ -204,6 +205,12 @@ class _LinkRecv:
         body = data[9:]
         self.packet_nums.append(packet_num)
         self.recv_callback(body)
+
+    def __repr__(self):
+        return '<\033[31m_LinkRecv 0x%x %d/%s\033[0m>' % (id(self), len(self.packet_nums),
+                                                           self.packet_nums[-1] -
+                                                           self.packet_nums[0] + 1
+                                                           if self.packet_nums else '-')
 
 class Link:
     def __init__(self, impl, recv_callback):
@@ -229,7 +236,7 @@ class Link:
             return getattr(self.linksend, name)
 
     def __repr__(self):
-        return repr(self.linksend)
+        return repr(self.linksend) + " " + repr(self.linkrecv)
 
 def create_link_pair():
     a = NullLinkImpl()
